@@ -57,7 +57,7 @@ def read_files(key):
         with open("blinker.txt", "r") as f:
             lines = [line.strip() for line in f.readlines()]
         return lines
-    elif key == ord('d'):
+    elif key == ord('i'):
         with open("glider.txt", "r") as f:
             lines = [line.strip() for line in f.readlines()]
         return lines
@@ -65,15 +65,28 @@ def read_files(key):
         with open("gun.txt", "r") as f:
             lines = [line.strip() for line in f.readlines()]
         return lines
+    elif key == ord('p'):
+        with open("pulsar.txt", "r") as f:
+            lines = [line.strip() for line in f.readlines()]
+        return lines
+    elif key == ord('d'):
+        with open("pentadec.txt", "r") as f:
+            lines = [line.strip() for line in f.readlines()]
+        return lines
+    elif key == ord('o'):
+        with open("door.txt", "r") as f:
+            lines = [line.strip() for line in f.readlines()]
+        return lines
+
 
 
 def main(stdscr):
-    configs = {ord('r'), ord('t'), ord('b'), ord('l'), ord('d'), ord('g')}
+    configs = {ord('r'), ord('t'), ord('b'), ord('l'), ord('i'), ord('g'), ord('p'), ord('d'), ord('o')}
     stdscr.addstr(0, 0, "Please make your terminal it's maximum size and press enter")
     while stdscr.getch() not in {10, 13, curses.KEY_ENTER}:
         continue
     stdscr.clear()
-    stdscr.addstr(0, 0, "Choose your configuration: RANDOM: 'r', TOAD: 't', BEACON: 'b', BLINKER: 'l', GLIDER: 'd', GOSPER GLIDER GUN: 'g'")
+    stdscr.addstr(0, 0, "Choose your configuration: RANDOM: 'r', TOAD: 't', BEACON: 'b', BLINKER: 'l', GLIDER: 'i', GOSPER GLIDER GUN: 'g', PULSAR: 'p', PENTADECATHLON: 'd', DOOR: 'o'")
     key = stdscr.getch()
     while True:
         if key in configs:
@@ -81,7 +94,68 @@ def main(stdscr):
             break
         key = stdscr.getch()
     stdscr.clear()
-    if lines != None:
+    h_max, w_max = stdscr.getmaxyx()
+    if lines:
         game_width, game_height = len(lines[0]), len(lines)
         width, height = game_width + 2, game_height + 4
-        board = Board(game_width, game_height,
+        start_x, start_y = (w_max - width) // 2, (h_max - height) // 2
+        board = Board(game_width, game_height, lines)
+    else:
+        height, width = h_max, w_max
+        width -= 1  # To fit in newline
+        game_height, game_width = height - 4, width - 2
+        start_x, start_y = 0, 0
+        board = Board(game_width, game_height)
+    stdscr.nodelay(True)
+    curses.curs_set(0)
+    stdscr.timeout(300)
+
+    while True:
+        stdscr.clear()
+        matrix = board.next_state()
+        for i in range(height - 2):
+            for j in range(width):
+                if i == 0 or i == height - 3:
+                    if j == 0:
+                        stdscr.addstr(start_y + i, start_x + j, "+")
+                    elif j == width - 1:
+                        stdscr.addstr(start_y + i, start_x + j, "+\n")
+                    else:
+                        stdscr.addstr(start_y + i, start_x + j, "-")
+                else:
+                    if j == 0:
+                        stdscr.addstr(start_y + i, start_x + j, "|")
+                    elif j == width - 1:
+                        stdscr.addstr(start_y + i, start_x + j, "|\n")
+                    elif matrix[i - 1][j - 1] == 1:
+                        stdscr.addstr(start_y + i, start_x + j, "#")
+                    else:
+                        stdscr.addstr(start_y + i, start_x + j, " ")
+        config = "Change your configuration: RANDOM: 'r', TOAD: 't', BEACON: 'b', BLINKER: 'l', GLIDER: 'i', GOSPER GLIDER GUN: 'g', PULSAR: 'p', PENTADECATHLON: 'd', DOOR: 'o'"
+        _exit = "Press 'q' to exit"
+        stdscr.addstr(start_y + height - 2, (w_max - len(config))// 2, config)
+        stdscr.addstr(start_y + height - 1, (w_max - len(_exit)) // 2, _exit)
+        stdscr.refresh()
+
+        key = stdscr.getch()
+        if key == ord("q"):
+            break
+        elif key in configs:
+            lines = read_files(key)
+            if lines:
+                game_width, game_height = len(lines[0]), len(lines)
+                width, height = game_width + 2, game_height + 4
+                start_x, start_y = (w_max - width) // 2, (h_max - height) // 2
+                board = Board(game_width, game_height, lines)
+            else:
+                height, width = h_max, w_max
+                width -= 1  # To fit in newline
+                game_height, game_width = height - 4, width - 2
+                start_x, start_y = 0, 0
+                board = Board(game_width, game_height)
+            stdscr.nodelay(True)
+            curses.curs_set(0)
+            stdscr.timeout(150)
+
+
+curses.wrapper(main)
